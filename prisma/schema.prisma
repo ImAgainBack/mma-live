@@ -1,0 +1,162 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Organizations (UFC, Bellator, ONE, PFL, etc.)
+model Organization {
+  id         Int       @id @default(autoincrement())
+  name       String    @db.VarChar(100)
+  slug       String    @unique @db.VarChar(100)
+  logoUrl    String?   @map("logo_url")
+  websiteUrl String?   @map("website_url")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  events     Event[]
+  favorites  UserFavorite[]
+
+  @@map("organizations")
+}
+
+// MMA Events
+model Event {
+  id             Int       @id @default(autoincrement())
+  organizationId Int       @map("organization_id")
+  name           String    @db.VarChar(255)
+  slug           String    @unique @db.VarChar(255)
+  venue          String?   @db.VarChar(255)
+  city           String?   @db.VarChar(100)
+  country        String?   @db.VarChar(100)
+  startDate      DateTime  @map("start_date") @db.Timestamptz
+  endDate        DateTime? @map("end_date") @db.Timestamptz
+  posterUrl      String?   @map("poster_url")
+  status         String    @default("upcoming") @db.VarChar(20)
+  createdAt      DateTime  @default(now()) @map("created_at")
+  
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  fights         Fight[]
+  broadcasts     EventBroadcast[]
+  alerts         UserAlert[]
+
+  @@map("events")
+}
+
+// Fighters
+model Fighter {
+  id           Int       @id @default(autoincrement())
+  firstName    String    @map("first_name") @db.VarChar(100)
+  lastName     String    @map("last_name") @db.VarChar(100)
+  nickname     String?   @db.VarChar(100)
+  slug         String    @unique @db.VarChar(200)
+  weightClass  String?   @map("weight_class") @db.VarChar(50)
+  nationality  String?   @db.VarChar(100)
+  recordWins   Int       @default(0) @map("record_wins")
+  recordLosses Int       @default(0) @map("record_losses")
+  recordDraws  Int       @default(0) @map("record_draws")
+  photoUrl     String?   @map("photo_url")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  
+  fightsAsFighter1 Fight[] @relation("Fighter1")
+  fightsAsFighter2 Fight[] @relation("Fighter2")
+  wonFights        Fight[] @relation("Winner")
+  alerts           UserAlert[]
+  favorites        UserFavorite[]
+
+  @@map("fighters")
+}
+
+// Fights
+model Fight {
+  id              Int       @id @default(autoincrement())
+  eventId         Int       @map("event_id")
+  fighter1Id      Int       @map("fighter1_id")
+  fighter2Id      Int       @map("fighter2_id")
+  weightClass     String?   @map("weight_class") @db.VarChar(50)
+  isTitleFight    Boolean   @default(false) @map("is_title_fight")
+  cardType        String?   @map("card_type") @db.VarChar(20)
+  scheduledRounds Int       @default(3) @map("scheduled_rounds")
+  scheduledTime   DateTime? @map("scheduled_time") @db.Timestamptz
+  status          String    @default("scheduled") @db.VarChar(20)
+  winnerId        Int?      @map("winner_id")
+  method          String?   @db.VarChar(100)
+  roundEnded      Int?      @map("round_ended")
+  timeEnded       String?   @map("time_ended") @db.VarChar(10)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  
+  event    Event   @relation(fields: [eventId], references: [id])
+  fighter1 Fighter @relation("Fighter1", fields: [fighter1Id], references: [id])
+  fighter2 Fighter @relation("Fighter2", fields: [fighter2Id], references: [id])
+  winner   Fighter? @relation("Winner", fields: [winnerId], references: [id])
+
+  @@map("fights")
+}
+
+// Broadcasters
+model Broadcaster {
+  id         Int       @id @default(autoincrement())
+  name       String    @db.VarChar(100)
+  slug       String    @unique @db.VarChar(100)
+  logoUrl    String?   @map("logo_url")
+  websiteUrl String?   @map("website_url")
+  isFree     Boolean   @default(false) @map("is_free")
+  countries  String[]
+  createdAt  DateTime  @default(now()) @map("created_at")
+  
+  broadcasts EventBroadcast[]
+
+  @@map("broadcasters")
+}
+
+// Event <-> Broadcaster links
+model EventBroadcast {
+  id            Int       @id @default(autoincrement())
+  eventId       Int       @map("event_id")
+  broadcasterId Int       @map("broadcaster_id")
+  streamUrl     String?   @map("stream_url")
+  cardType      String?   @map("card_type") @db.VarChar(20)
+  region        String?   @db.VarChar(100)
+  isPpv         Boolean   @default(false) @map("is_ppv")
+  price         Decimal?  @db.Decimal(10, 2)
+  
+  event       Event       @relation(fields: [eventId], references: [id])
+  broadcaster Broadcaster @relation(fields: [broadcasterId], references: [id])
+
+  @@map("event_broadcasts")
+}
+
+// User alerts
+model UserAlert {
+  id             Int       @id @default(autoincrement())
+  email          String?   @db.VarChar(255)
+  telegramChatId String?   @map("telegram_chat_id") @db.VarChar(100)
+  fighterId      Int?      @map("fighter_id")
+  eventId        Int?      @map("event_id")
+  alertType      String?   @map("alert_type") @db.VarChar(20)
+  minutesBefore  Int       @default(30) @map("minutes_before")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  
+  fighter Fighter? @relation(fields: [fighterId], references: [id])
+  event   Event?   @relation(fields: [eventId], references: [id])
+
+  @@map("user_alerts")
+}
+
+// User favorites
+model UserFavorite {
+  id             Int       @id @default(autoincrement())
+  userSessionId  String    @map("user_session_id") @db.VarChar(255)
+  fighterId      Int?      @map("fighter_id")
+  organizationId Int?      @map("organization_id")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  
+  fighter      Fighter?      @relation(fields: [fighterId], references: [id])
+  organization Organization? @relation(fields: [organizationId], references: [id])
+
+  @@map("user_favorites")
+}
