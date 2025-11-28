@@ -172,7 +172,7 @@ async function main() {
       data: {
         firstName: 'Stipe',
         lastName: 'Miocic',
-        nickname: '',
+        nickname: null,
         slug: 'stipe-miocic',
         weightClass: 'Heavyweight',
         nationality: 'United States',
@@ -266,7 +266,7 @@ async function main() {
       data: {
         firstName: 'Kayla',
         lastName: 'Harrison',
-        nickname: '',
+        nickname: null,
         slug: 'kayla-harrison',
         weightClass: 'Lightweight',
         nationality: 'United States',
@@ -279,7 +279,7 @@ async function main() {
       data: {
         firstName: 'Larissa',
         lastName: 'Pacheco',
-        nickname: '',
+        nickname: null,
         slug: 'larissa-pacheco',
         weightClass: 'Lightweight',
         nationality: 'Brazil',
@@ -358,7 +358,7 @@ async function main() {
       data: {
         firstName: 'Fares',
         lastName: 'Ziam',
-        nickname: '',
+        nickname: null,
         slug: 'fares-ziam',
         weightClass: 'Lightweight',
         nationality: 'France',
